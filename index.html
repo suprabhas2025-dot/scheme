@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Panchayat Scheme Finder</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#2f6b3a">
+<style>
+:root{--g:#2f6b3a;--gd:#1d4527;--bg:#eef3ec;--card:#fff;--ink:#1c2a1e;--mut:#5a6b5c;--m:#f0a81c;--line:#cfdccf}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.5 "Noto Sans Bengali","Noto Sans Devanagari",system-ui,sans-serif}
+header{background:var(--g);color:#fff;padding:18px 16px 22px}
+h1{margin:0;font-size:1.45rem;line-height:1.25}
+header p{margin:4px 0 12px;opacity:.9}
+main{max-width:640px;margin:0 auto;padding:16px}
+select,input[type=number]{width:100%;padding:12px;font:inherit;border:2px solid var(--line);border-radius:10px;background:#fff;color:var(--ink)}
+#lang{max-width:220px;border-color:#fff}
+label{display:block;font-weight:600;margin:14px 0 4px}
+.chk{display:flex;gap:10px;align-items:center;font-weight:400;margin:10px 0}
+.chk input{width:24px;height:24px;accent-color:var(--g)}
+#mic{width:100%;display:flex;align-items:center;justify-content:center;gap:10px;background:var(--m);color:#2a1d00;border:0;border-radius:14px;padding:18px;font:700 1.15rem inherit;font-family:inherit;cursor:pointer;box-shadow:0 3px 0 #b97f0a}
+#mic.on{background:#d9381e;color:#fff;box-shadow:0 3px 0 #8f2412}
+#hint,#heard{font-size:.92rem;color:var(--mut);margin:8px 0 0}
+#heard{color:var(--gd);font-weight:600}
+.go{width:100%;margin-top:18px;padding:16px;border:0;border-radius:12px;background:var(--g);color:#fff;font:700 1.1rem inherit;font-family:inherit;cursor:pointer}
+button:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid var(--m);outline-offset:2px}
+.card{background:var(--card);border:1px solid var(--line);border-left:6px solid var(--g);border-radius:10px;padding:12px 14px;margin:12px 0}
+.card h3{margin:0 0 2px;font-size:1.08rem}
+.card p{margin:0 0 6px}
+.docs{font-size:.92rem;color:var(--mut)}
+.bar{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:22px}
+.bar h2{margin:0;font-size:1.15rem}
+#read{padding:8px 12px;border:2px solid var(--g);background:#fff;color:var(--g);border-radius:10px;font:600 .95rem inherit;font-family:inherit;cursor:pointer}
+.note{font-size:.85rem;color:var(--mut);margin:24px 0 8px}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<header>
+  <h1 data-i="title"></h1>
+  <p data-i="sub"></p>
+  <select id="lang" aria-label="Language"><option value="en">English</option><option value="bn">বাংলা</option><option value="hi">हिन्दी</option></select>
+</header>
+<main>
+  <button id="mic" type="button">🎤 <span data-i="speak"></span></button>
+  <p id="hint" data-i="hint"></p>
+  <p id="heard" aria-live="polite"></p>
+
+  <form id="f">
+    <label for="age" data-i="age"></label><input id="age" type="number" min="1" max="110" inputmode="numeric" required>
+    <label for="gender" data-i="gender"></label>
+    <select id="gender"><option value="f" data-i="female"></option><option value="m" data-i="male"></option><option value="o" data-i="other"></option></select>
+    <label for="occ" data-i="occ"></label>
+    <select id="occ"><option value="farmer" data-i="farmer"></option><option value="student" data-i="student"></option><option value="labour" data-i="labour"></option><option value="home" data-i="home"></option><option value="other" data-i="other"></option></select>
+    <div id="clsw" hidden><label for="cls" data-i="cls"></label>
+    <select id="cls"><option value="5-8" data-i="c58"></option><option value="9-12" data-i="c912"></option><option value="col" data-i="col"></option></select></div>
+    <label for="area" data-i="area"></label>
+    <select id="area"><option value="rural" data-i="rural"></option><option value="urban" data-i="urban"></option></select>
+    <label for="inc" data-i="inc"></label>
+    <select id="inc"><option value="1" data-i="i1"></option><option value="2" data-i="i2"></option><option value="3" data-i="i3"></option></select>
+    <label class="chk"><input type="checkbox" id="land"><span data-i="land"></span></label>
+    <label class="chk"><input type="checkbox" id="house"><span data-i="house"></span></label>
+    <label class="chk"><input type="checkbox" id="widow"><span data-i="widow"></span></label>
+    <label class="chk"><input type="checkbox" id="bank" checked><span data-i="bank"></span></label>
+    <button class="go" type="submit" data-i="find"></button>
+  </form>
+
+  <section id="out" hidden>
+    <div class="bar"><h2 data-i="res"></h2><button id="read" type="button" data-i="read"></button></div>
+    <div id="list"></div>
+  </section>
+  <p class="note" data-i="note"></p>
+</main>
+
+<script>
+const T={
+en:{title:"Panchayat Scheme Finder",sub:"Find government schemes you may qualify for",speak:"Speak your details",hint:'Try: "I am a 45 year old woman farmer in a village, I have land"',age:"Age",gender:"Gender",female:"Female",male:"Male",other:"Other",occ:"Occupation",farmer:"Farmer",student:"Student",labour:"Labourer",home:"Homemaker",cls:"Class",c58:"Class 5-8",c912:"Class 9-12",col:"College",area:"Area",rural:"Village",urban:"Town or city",inc:"Family income per year",i1:"Below ₹1 lakh",i2:"₹1 to 2.5 lakh",i3:"Above ₹2.5 lakh",land:"I own farmland",house:"I have a pucca (concrete) house",widow:"I am a widow",bank:"I have a bank account",find:"Find schemes",res:"Schemes you may qualify for",none:"No match found. Please visit your panchayat office.",docs:"Documents needed",read:"🔊 Read aloud",listen:"Listening… speak now",heard:"Heard:",nosr:"Voice input is not supported here. Please use Chrome.",noage:"Could not find your age. Please say or type it.",note:"Prototype with sample data. Rules are simplified. Confirm with your panchayat office or the official scheme portal."},
+bn:{title:"পঞ্চায়েত প্রকল্প সন্ধানী",sub:"আপনি কোন সরকারি প্রকল্পের যোগ্য তা খুঁজুন",speak:"বলুন",hint:'যেমন: "আমি ৪৫ বছরের মহিলা কৃষক, গ্রামে থাকি, আমার জমি আছে"',age:"বয়স",gender:"লিঙ্গ",female:"মহিলা",male:"পুরুষ",other:"অন্যান্য",occ:"পেশা",farmer:"কৃষক",student:"ছাত্রছাত্রী",labour:"শ্রমিক",home:"গৃহিণী",cls:"শ্রেণি",c58:"শ্রেণি ৫-৮",c912:"শ্রেণি ৯-১২",col:"কলেজ",area:"এলাকা",rural:"গ্রাম",urban:"শহর",inc:"পরিবারের বার্ষিক আয়",i1:"₹১ লক্ষের কম",i2:"₹১ থেকে ২.৫ লক্ষ",i3:"₹২.৫ লক্ষের বেশি",land:"আমার চাষের জমি আছে",house:"আমার পাকা বাড়ি আছে",widow:"আমি বিধবা",bank:"আমার ব্যাংক অ্যাকাউন্ট আছে",find:"প্রকল্প খুঁজুন",res:"আপনি যে প্রকল্পগুলির যোগ্য হতে পারেন",none:"কোনো প্রকল্প মেলেনি। পঞ্চায়েত অফিসে যোগাযোগ করুন।",docs:"প্রয়োজনীয় নথি",read:"🔊 পড়ে শোনান",listen:"শুনছি… এখন বলুন",heard:"শুনেছি:",nosr:"এখানে ভয়েস ইনপুট চলে না। Chrome ব্যবহার করুন।",noage:"বয়স পাওয়া যায়নি। বলুন বা লিখুন।",note:"এটি নমুনা তথ্যসহ প্রোটোটাইপ। নিয়ম সরলীকৃত। পঞ্চায়েত অফিস বা সরকারি পোর্টালে নিশ্চিত করুন।"},
+hi:{title:"पंचायत योजना खोजक",sub:"जानें आप किन सरकारी योजनाओं के पात्र हैं",speak:"बोलकर बताएं",hint:'जैसे: "मैं 45 साल की महिला किसान हूँ, गाँव में रहती हूँ, मेरे पास जमीन है"',age:"उम्र",gender:"लिंग",female:"महिला",male:"पुरुष",other:"अन्य",occ:"पेशा",farmer:"किसान",student:"छात्र-छात्रा",labour:"मजदूर",home:"गृहिणी",cls:"कक्षा",c58:"कक्षा 5-8",c912:"कक्षा 9-12",col:"कॉलेज",area:"क्षेत्र",rural:"गाँव",urban:"शहर",inc:"परिवार की सालाना आय",i1:"₹1 लाख से कम",i2:"₹1 से 2.5 लाख",i3:"₹2.5 लाख से अधिक",land:"मेरे पास खेती की जमीन है",house:"मेरे पास पक्का घर है",widow:"मैं विधवा हूँ",bank:"मेरा बैंक खाता है",find:"योजनाएं खोजें",res:"योजनाएं जिनके आप पात्र हो सकते हैं",none:"कोई योजना नहीं मिली। पंचायत कार्यालय जाएँ।",docs:"ज़रूरी दस्तावेज़",read:"🔊 सुनें",listen:"सुन रहा हूँ… अब बोलें",heard:"सुना:",nosr:"यहाँ वॉइस इनपुट नहीं चलता। Chrome इस्तेमाल करें।",noage:"उम्र नहीं मिली। बोलें या लिखें।",note:"यह नमूना डेटा वाला प्रोटोटाइप है। नियम सरल किए गए हैं। पंचायत कार्यालय या सरकारी पोर्टल पर पुष्टि करें।"}
+};
+const D={aadhaar:["Aadhaar card","আধার কার্ড","आधार कार्ड"],bank:["Bank passbook","ব্যাংক পাসবই","बैंक पासबुक"],res:["Residence proof","বাসস্থানের প্রমাণ","निवास प्रमाण"],inc:["Income certificate","আয়ের শংসাপত্র","आय प्रमाण पत्र"],land:["Land record","জমির নথি","जमीन के कागज़"],age:["Age proof","বয়সের প্রমাণ","आयु प्रमाण"],sch:["School certificate","স্কুলের শংসাপত্র","स्कूल प्रमाणपत्र"]};
+// Sample rules (simplified). Verify against official sources before real use.
+const S=[
+{n:["Lakshmir Bhandar","লক্ষ্মীর ভাণ্ডার","लक्ष्मी भंडार"],b:["Monthly income support for women (West Bengal)","মহিলাদের মাসিক আর্থিক সহায়তা (পশ্চিমবঙ্গ)","महिलाओं को मासिक आर्थिक सहायता (पश्चिम बंगाल)"],d:["aadhaar","bank","res"],f:p=>p.g=="f"&&p.age>=25&&p.age<=60},
+{n:["Kanyashree","কন্যাশ্রী","कन्याश्री"],b:["Education support for girls","মেয়েদের শিক্ষায় আর্থিক সহায়তা","लड़कियों की पढ़ाई के लिए सहायता"],d:["aadhaar","bank","sch"],f:p=>p.g=="f"&&p.age>=13&&p.age<=19&&p.occ=="student"},
+{n:["Krishak Bandhu","কৃষক বন্ধু","कृषक बंधु"],b:["Support and death benefit for farmers","কৃষকদের আর্থিক সহায়তা ও মৃত্যুকালীন সুবিধা","किसानों को सहायता और मृत्यु लाभ"],d:["land","bank","aadhaar"],f:p=>p.occ=="farmer"&&p.land&&p.age>=18&&p.age<=60},
+{n:["PM-KISAN","পিএম-কিষাণ","पीएम-किसान"],b:["₹6,000 per year for farmer families","কৃষক পরিবারকে বছরে ₹৬,০০০","किसान परिवार को सालाना ₹6,000"],d:["land","bank","aadhaar"],f:p=>p.occ=="farmer"&&p.land&&p.inc<3},
+{n:["Swasthya Sathi","স্বাস্থ্য সাথী","स्वास्थ्य साथी"],b:["Health insurance for families","পরিবারের স্বাস্থ্যবিমা","परिवारों के लिए स्वास्थ्य बीमा"],d:["aadhaar","res"],f:p=>true},
+{n:["Old-age pension","বার্ধক্য ভাতা","वृद्धावस्था पेंशन"],b:["Monthly pension for senior citizens","প্রবীণদের মাসিক ভাতা","बुजुर्गों को मासिक पेंशन"],d:["age","bank","inc"],f:p=>p.age>=60&&p.inc==1},
+{n:["Widow pension","বিধবা ভাতা","विधवा पेंशन"],b:["Monthly pension for widows","বিধবাদের মাসিক ভাতা","विधवाओं को मासिक पेंशन"],d:["aadhaar","bank","inc"],f:p=>p.g=="f"&&p.widow&&p.age>=40&&p.inc==1},
+{n:["Sabuj Sathi","সবুজ সাথী","सबुज साथी"],b:["Free bicycle for school students","স্কুলছাত্রছাত্রীদের বিনামূল্যে সাইকেল","स्कूली छात्रों को मुफ्त साइकिल"],d:["sch","aadhaar"],f:p=>p.occ=="student"&&p.cls=="9-12"},
+{n:["Housing (Banglar Bari / PMAY-G)","আবাস (বাংলার বাড়ি / পিএমএওয়াই-জি)","आवास (बांग्लार बाड़ी / पीएमएवाई-जी)"],b:["Help to build a pucca house","পাকা বাড়ি তৈরিতে সহায়তা","पक्का घर बनाने में सहायता"],d:["aadhaar","bank","inc"],f:p=>p.area=="rural"&&!p.house&&p.inc==1},
+{n:["Jan Dhan account","জনধন অ্যাকাউন্ট","जन धन खाता"],b:["Zero-balance bank account","জিরো ব্যালান্স ব্যাংক অ্যাকাউন্ট","ज़ीरो बैलेंस बैंक खाता"],d:["aadhaar"],f:p=>!p.bank},
+{n:["MGNREGA (100 days work)","১০০ দিনের কাজ (এমজিএনরেগা)","मनरेगा (100 दिन काम)"],b:["Up to 100 days of paid work a year","বছরে ১০০ দিন পর্যন্ত মজুরির কাজ","साल में 100 दिन तक रोजगार"],d:["aadhaar","bank","res"],f:p=>p.area=="rural"&&p.age>=18&&["labour","farmer","other"].includes(p.occ)},
+{n:["Ujjwala Yojana","উজ্জ্বলা যোজনা","उज्ज्वला योजना"],b:["Free LPG gas connection","বিনামূল্যে এলপিজি সংযোগ","मुफ्त एलपीजी कनेक्शन"],d:["aadhaar","bank","inc"],f:p=>p.g=="f"&&p.age>=18&&p.inc==1}
+];
+const LI={en:0,bn:1,hi:2},VL={en:"en-IN",bn:"bn-IN",hi:"hi-IN"};
+const $=id=>document.getElementById(id);
+let lang="en",last=[];
+try{lang=localStorage.getItem("lang")||"en"}catch(e){}
+
+function apply(){
+  $("lang").value=lang;document.documentElement.lang=lang;
+  document.querySelectorAll("[data-i]").forEach(e=>e.textContent=T[lang][e.dataset.i]);
+  $("clsw").hidden=$("occ").value!="student";
+  if(!$("out").hidden)search();
+}
+$("lang").onchange=e=>{lang=e.target.value;try{localStorage.setItem("lang",lang)}catch(x){}apply()};
+$("occ").onchange=()=>{$("clsw").hidden=$("occ").value!="student"};
+
+function profile(){return{age:+$("age").value,g:$("gender").value,occ:$("occ").value,cls:$("cls").value,area:$("area").value,inc:+$("inc").value,land:$("land").checked,house:$("house").checked,widow:$("widow").checked,bank:$("bank").checked}}
+
+function search(){
+  const p=profile(),i=LI[lang];
+  last=S.filter(s=>s.f(p));
+  $("out").hidden=false;
+  $("list").innerHTML=last.length?last.map(s=>`<div class="card"><h3>${s.n[i]}</h3><p>${s.b[i]}</p><div class="docs"><b>${T[lang].docs}:</b> ${s.d.map(k=>D[k][i]).join(", ")}</div></div>`).join(""):`<p>${T[lang].none}</p>`;
+}
+$("f").onsubmit=e=>{e.preventDefault();search();$("out").scrollIntoView({behavior:"smooth"})};
+
+$("read").onclick=()=>{
+  if(!("speechSynthesis" in window))return;
+  speechSynthesis.cancel();
+  const i=LI[lang],txt=last.length?last.map(s=>s.n[i]+". "+s.b[i]).join(". "):T[lang].none;
+  const u=new SpeechSynthesisUtterance(txt);u.lang=VL[lang];speechSynthesis.speak(u);
+};
+
+// Voice input: fills the form from what the person says (any of the 3 languages).
+const K={
+f:["woman","female","girl","lady","মহিলা","মেয়ে","নারী","महिला","लड़की","औरत"],
+m:["man","male","boy","পুরুষ","ছেলে","पुरुष","लड़का","आदमी"],
+farmer:["farmer","কৃষক","চাষি","किसान"],student:["student","ছাত্র","স্কুল","छात्र","विद्यार्थी","स्टूडेंट"],labour:["labour","labor","worker","শ্রমিক","মজুর","मजदूर","मज़दूर"],home:["homemaker","housewife","গৃহিণী","गृहिणी","गृहणी"],
+rural:["village","গ্রাম","गाँव","गांव"],urban:["city","town","শহর","शहर"],
+land:["land","জমি","जमीन","ज़मीन"],widow:["widow","বিধবা","विधवा"],
+nobank:["no bank","without bank","ব্যাংক অ্যাকাউন্ট নেই","बैंक खाता नहीं"],nohouse:["no house","kutcha","কাঁচা","कच्चा"],
+low:["poor","bpl","গরিব","গরীব","गरीब"]
+};
+const has=(t,k)=>K[k].some(w=>t.includes(w));
+function fromSpeech(raw){
+  let t=raw.toLowerCase().replace(/[০-৯]/g,c=>c.charCodeAt(0)-2534).replace(/[०-९]/g,c=>c.charCodeAt(0)-2406);
+  const n=t.match(/\d{1,3}/);if(n)$("age").value=n[0];
+  if(has(t,"f"))$("gender").value="f";else if(has(t,"m"))$("gender").value="m";
+  for(const o of["farmer","student","labour","home"])if(has(t,o)){$("occ").value=o;break}
+  if(has(t,"rural"))$("area").value="rural";else if(has(t,"urban"))$("area").value="urban";
+  if(has(t,"land"))$("land").checked=true;
+  if(has(t,"widow"))$("widow").checked=true;
+  if(has(t,"nobank"))$("bank").checked=false;
+  if(has(t,"nohouse"))$("house").checked=false;
+  if(has(t,"low"))$("inc").value="1";
+  $("clsw").hidden=$("occ").value!="student";
+  if(n)search();else $("heard").textContent=T[lang].noage;
+}
+const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+$("mic").onclick=()=>{
+  if(!SR){$("heard").textContent=T[lang].nosr;return}
+  const r=new SR();r.lang=VL[lang];r.interimResults=false;
+  r.onstart=()=>{$("mic").classList.add("on");$("heard").textContent=T[lang].listen};
+  r.onend=()=>$("mic").classList.remove("on");
+  r.onerror=e=>{$("heard").textContent=e.error};
+  r.onresult=e=>{const s=e.results[0][0].transcript;$("heard").textContent=T[lang].heard+" "+s;fromSpeech(s)};
+  r.start();
+};
+
+if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});
+apply();
+</script>
+</body>
+</html>
